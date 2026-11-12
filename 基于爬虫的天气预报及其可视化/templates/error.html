@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071012">
+    <title>{{ status_code }} · Atmos</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='2.0.2') }}">
+</head>
+<body class="weather-page error-page">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="site-header">
+        <a class="brand" href="/">
+            <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="brand-text">ATMOS<small>智能气象台</small></span>
+        </a>
+    </header>
+    <main class="standalone-error">
+        <span class="error-code">{{ status_code }}</span>
+        <p class="eyebrow">A QUIET GAP IN THE CLOUDS</p>
+        <h1>{{ message }}</h1>
+        <p>页面可能已移动，或暂时被高空气流遮住。回到首页，继续查看天气。</p>
+        <a class="primary-link" href="/">返回首页</a>
+    </main>
+</body>
+</html>

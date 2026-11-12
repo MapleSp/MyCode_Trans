@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071012">
+    <meta name="description" content="城市实时天气、七日预报和智能生活建议。">
+    <title>天气观测 · Atmos</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='2.0.2') }}">
+</head>
+<body class="weather-page">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="site-header weather-header">
+        <a class="brand" href="/" aria-label="返回 Atmos 首页">
+            <span class="brand-mark" aria-hidden="true">
+                <span></span><span></span><span></span>
+            </span>
+            <span class="brand-text">ATMOS<small>智能气象台</small></span>
+        </a>
+
+        <form id="header-search-form" class="header-search" role="search">
+            <div class="header-search-inner" data-autocomplete>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+                <input id="header-city-search" type="search" placeholder="搜索其他城市" autocomplete="off" aria-label="搜索其他城市" aria-controls="header-suggestions">
+                <button type="submit" aria-label="搜索"><span>查询</span></button>
+                <div class="suggestion-list" id="header-suggestions" role="listbox" hidden></div>
+            </div>
+        </form>
+
+        <div class="header-actions">
+            <button class="icon-button location-header" id="header-location" type="button" title="使用当前位置" aria-label="使用当前位置">
+                <svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"></path><circle cx="12" cy="10" r="2"></circle></svg>
+            </button>
+            <a class="icon-button" href="/" title="返回首页" aria-label="返回首页">
+                <svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"></path></svg>
+            </a>
+        </div>
+    </header>
+
+    <main class="weather-main">
+        <section id="loading-state" class="loading-layout" aria-label="正在加载天气">
+            <div class="skeleton skeleton-hero"></div>
+            <div class="skeleton-row">
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+            </div>
+            <div class="loading-caption">
+                <span class="loader-orbit" aria-hidden="true"><i></i></span>
+                正在读取云层、风向与城市体温…
+            </div>
+        </section>
+
+        <section id="error-state" class="error-state glass-card" hidden>
+            <div class="error-orbit" aria-hidden="true"><span>?</span></div>
+            <p class="eyebrow">WEATHER NOT FOUND</p>
+            <h1 id="error-title">没有捕捉到这片天空</h1>
+            <p id="error-message">请换一个城市名称试试。</p>
+            <div class="error-suggestions" id="error-suggestions"></div>
+            <a class="primary-link" href="/">返回搜索</a>
+        </section>
+
+        <article id="weather-content" hidden>
+            <section class="weather-hero" id="weather-hero">
+                <div class="hero-grid-lines" aria-hidden="true"></div>
+                <div class="hero-orbit hero-orbit-one" aria-hidden="true"></div>
+                <div class="hero-orbit hero-orbit-two" aria-hidden="true"></div>
+                <div class="hero-top">
+                    <div>
+                        <div class="location-line">
+                            <span class="pin-dot"></span>
+                            <span id="hero-city">城市</span>
+                            <span class="location-separator">/</span>
+                            <span id="hero-date">今日观测</span>
+                        </div>
+                        <p class="hero-kicker" id="hero-kicker">CURRENT CONDITIONS</p>
+                    </div>
+                    <div class="source-badge" id="source-badge" title="数据来源">
+                        <span class="status-dot"></span>
+                        <span id="source-label">实时数据</span>
+                    </div>
+                </div>
+
+                <div class="hero-content">
+                    <div class="temperature-block">
+                        <div class="temperature-line">
+                            <span id="current-temperature">--</span><sup>°</sup>
+                        </div>
+                        <div class="weather-state">
+                            <h1 id="current-weather">读取天空</h1>
+                            <p>体感 <strong id="feels-like">--°</strong> · 今日 <span id="today-range">-- / --°</span></p>
+                        </div>
+                        <div class="hero-tags" id="hero-tags"></div>
+                    </div>
+
+                    <div class="weather-art" id="weather-art" data-weather="sun" aria-hidden="true">
+                        <div class="art-halo"></div>
+                        <div class="art-sun"></div>
+                        <div class="art-cloud cloud-back"></div>
+                        <div class="art-cloud cloud-front"></div>
+                        <div class="art-rain"><i></i><i></i><i></i><i></i><i></i></div>
+                        <div class="art-snow"><i>·</i><i>·</i><i>·</i><i>·</i><i>·</i></div>
+                        <div class="art-fog"><i></i><i></i><i></i></div>
+                    </div>
+                </div>
+
+                <div class="hero-bottom">
+                    <div class="hero-mini-stat">
+                        <span>相对湿度</span>
+                        <strong id="hero-humidity">--%</strong>
+                    </div>
+                    <div class="hero-mini-stat">
+                        <span>风向风力</span>
+                        <strong id="hero-wind">--</strong>
+                    </div>
+                    <div class="hero-mini-stat">
+                        <span>空气质量</span>
+                        <strong id="hero-air">--</strong>
+                    </div>
+                    <div class="hero-updated">
+                        <span>最后更新</span>
+                        <strong id="updated-time">--:--</strong>
+                    </div>
+                </div>
+            </section>
+
+            <div class="status-banner" id="status-banner" hidden></div>
+            <section class="official-alerts" id="official-alerts" hidden></section>
+
+            <section class="insight-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">SMART WEATHER BRIEF</p>
+                        <h2>今天，这样安排更舒服</h2>
+                    </div>
+                    <div class="comfort-score">
+                        <div class="score-ring" id="score-ring">
+                            <span id="comfort-score">--</span>
+                        </div>
+                        <p>舒适指数<br><strong id="risk-level">分析中</strong></p>
+                    </div>
+                </div>
+
+                <div class="brief-card">
+                    <div class="brief-main">
+                        <span class="brief-label">智能摘要</span>
+                        <h3 id="advice-headline">正在分析天气</h3>
+                        <p id="advice-summary"></p>
+                        <div class="factor-chips" id="factor-chips"></div>
+                    </div>
+                    <div class="brief-details">
+                        <div class="brief-detail">
+                            <span>穿衣</span>
+                            <p id="outfit-advice">--</p>
+                        </div>
+                        <div class="brief-detail">
+                            <span>活动</span>
+                            <p id="activity-advice">--</p>
+                        </div>
+                        <div class="brief-detail">
+                            <span>窗口</span>
+                            <p id="best-window">--</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="metrics-section">
+                <div class="section-heading compact">
+                    <div>
+                        <p class="eyebrow">CURRENT METRICS</p>
+                        <h2>此刻的空气与光线</h2>
+                    </div>
+                    <p class="section-note">实时观测 · 部分数值来自官方生活指数</p>
+                </div>
+                <div class="metric-grid" id="metric-grid"></div>
+            </section>
+
+            <section class="forecast-section">
+                <div class="section-heading compact">
+                    <div>
+                        <p class="eyebrow">SEVEN DAY OUTLOOK</p>
+                        <h2>未来七日天气脉络</h2>
+                    </div>
+                    <div class="chart-legend">
+                        <span><i class="legend-high"></i>最高温</span>
+                        <span><i class="legend-low"></i>最低温</span>
+                    </div>
+                </div>
+                <div class="forecast-strip" id="forecast-strip"></div>
+                <div class="chart-card glass-card">
+                    <div class="chart-meta">
+                        <span>温度变化趋势</span>
+                        <strong id="trend-label">--</strong>
+                    </div>
+                    <div class="trend-chart" id="trend-chart" role="img" aria-label="未来七日温度折线图"></div>
+                </div>
+            </section>
+
+            <section class="recommendation-section">
+                <div class="section-heading compact">
+                    <div>
+                        <p class="eyebrow">PERSONAL CARE NOTES</p>
+                        <h2>为今天的你，多考虑一点</h2>
+                    </div>
+                    <p class="section-note" id="recommendation-count">-- 条建议</p>
+                </div>
+                <div class="recommendation-grid" id="recommendation-grid"></div>
+            </section>
+
+            <section class="indices-section">
+                <div class="section-heading compact">
+                    <div>
+                        <p class="eyebrow">LIFE INDICES</p>
+                        <h2>官方生活指数</h2>
+                    </div>
+                    <p class="section-note">点击卡片可查看完整说明</p>
+                </div>
+                <div class="indices-grid" id="indices-grid"></div>
+            </section>
+
+            <footer class="weather-footer">
+                <div>
+                    <span class="brand-text small">ATMOS<small>智能气象台</small></span>
+                    <p>天气数据来自中国天气网，生活建议由多指标规则引擎生成，仅作日常参考。</p>
+                </div>
+                <div class="footer-meta">
+                    <span id="data-quality">数据完整度 --</span>
+                    <span>·</span>
+                    <a href="/api/meta">API</a>
+                </div>
+            </footer>
+        </article>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="{{ url_for('static', filename='js/common.js', v='2.0.3') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/weather.js', v='2.0.3') }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全国城市天气查询</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            flex-direction: column;
+        }
+
+        #container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        #search {
+            margin-bottom: 30px;
+            padding: 12px;
+            width: calc(100% - 44px);
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        #search-btn {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #search-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>全国城市天气搜索</h1>
+        <input type="text" id="search" placeholder="请输入城市名称">
+        <button id="search-btn">搜索</button>
+    </div>
+
+    <script>
+        function searchWeather() {
+            const searchText = document.getElementById('search').value.trim();
+            if (searchText) {
+                window.location.href = `/weather.html?city=${encodeURIComponent(searchText)}`;
+            }
+        }
+
+        document.getElementById('search-btn').addEventListener('click', searchWeather);
+
+        document.getElementById('search').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                searchWeather();
+            }
+        });
+    </script>
+</body>
+</html>

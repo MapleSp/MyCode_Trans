@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气详情</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            flex-direction: column;
+        }
+
+        #container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        #weatherTable {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+
+        #weatherTable th, #weatherTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            transition: background-color 0.3s ease, transform 0.4s ease;
+        }
+
+        #weatherTable tr:hover td {
+            background-color: #f1f1f1;
+            transform: scale(1.20);
+        }
+
+        #weatherTable th {
+            background-color: #00BFFF;
+            color: white;
+            transition: none;
+        }
+
+        #weatherChart {
+            width: 100%;
+            height: 400px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            padding: 10px;
+            background-color: #00BFFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background-color: #1E90FF;
+        }
+
+        /* Ensure the page scrolls to the top on load */
+        html, body {
+            overflow: auto;
+        }
+
+        #rainWarning {
+            margin-top: 20px;
+            margin-bottom: 20px; /* 增加下方行间距 */
+            padding: 10px;
+            background-color: #FF6347;
+            color: white;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <button class="back-btn" onclick="goBack()">返回</button>
+        <h1 id="city-name">天气详情</h1>
+        <div id="rainWarning">未来七天内有雨，请注意携带雨具。</div>
+        <table id="weatherTable">
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>最高气温</th>
+                    <th>最低气温</th>
+                    <th>天气状况</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div id="weatherChart"></div>
+    </div>
+
+    <script>
+        async function fetchWeatherData(city) {
+            try {
+                const response = await fetch(`/weather?city=${encodeURIComponent(city)}`);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                return null;
+            }
+        }
+
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        function renderChart(city, weatherData) {
+            const chartDom = document.getElementById('weatherChart');
+            const myChart = echarts.init(chartDom);
+
+            const dates = weatherData.map(day => day.date);
+            const temperaturesHigh = weatherData.map(day => day.temperature_high);
+            const temperaturesLow = weatherData.map(day => day.temperature_low);
+            const weatherStates = weatherData.map(day => day.weather);
+
+            const weatherMarkers = weatherData
+                .map((day, index) => day.weather.includes('雨') ? { coord: [index, day.temperature_high], value: day.weather, name: day.weather } : null)
+                .filter(marker => marker !== null);
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        let weatherIndex = params[0].dataIndex;
+                        let tooltipContent = `${params[0].name}<br/>`;
+                        tooltipContent += `天气状况: ${weatherStates[weatherIndex]}<br/>`;
+                        params.forEach(param => {
+                            tooltipContent += `${param.marker} ${param.seriesName}: ${param.value}℃<br/>`;
+                        });
+                        return tooltipContent;
+                    }
+                },
+                legend: {
+                    data: ['最高气温', '最低气温']
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '气温 (℃)'
+                },
+                series: [
+                    {
+                        name: '最高气温',
+                        type: 'line',
+                        data: temperaturesHigh,
+                        itemStyle: { color: '#B22222' },
+                        markPoint: {
+                            data: weatherMarkers,
+                            symbol: 'emptyCircle',  // 空心圆
+                            symbolSize: 10,
+                            itemStyle: { color: '#0000FF' },  // #0000FF颜色
+                            label: {
+                                show: true,
+                                formatter: function(params) {
+                                    return params.value;
+                                },
+                                color: '#0000FF',
+                                position: 'top'  // 将标签放在线条上方
+                            }
+                        }
+                    },
+                    {
+                        name: '最低气温',
+                        type: 'line',
+                        data: temperaturesLow,
+                        itemStyle: { color: '#228B22' }
+                    }
+                ],
+                grid: {
+                    bottom: '15%'
+                },
+                dataZoom: [
+                    {
+                        type: 'inside'
+                    }
+                ]
+            };
+
+            myChart.setOption(option);
+        }
+
+        function renderTable(weatherData) {
+            const tableBody = document.querySelector('#weatherTable tbody');
+            tableBody.innerHTML = '';
+            weatherData.forEach(day => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${day.date}</td>
+                    <td>${day.temperature_high}℃</td>
+                    <td>${day.temperature_low}℃</td>
+                    <td>${day.weather}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function checkRainyDays(weatherData) {
+            const rainWarning = document.getElementById('rainWarning');
+            const hasRain = weatherData.some(day => day.weather.includes('雨'));
+            if (hasRain) {
+                rainWarning.style.display = 'block';
+            } else {
+                rainWarning.style.display = 'none';
+            }
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const city = getQueryParam('city');
+            if (city) {
+                const data = await fetchWeatherData(city);
+                const weatherData = data[city];
+                if (weatherData) {
+                    document.getElementById('city-name').textContent = `${city}的天气详情`;
+                    renderTable(weatherData);
+                    renderChart(city, weatherData);
+                    checkRainyDays(weatherData);
+                } else {
+                    document.getElementById('container').innerHTML = '<p>未找到天气数据</p>';
+                }
+            } else {
+                document.getElementById('container').innerHTML = '<p>无效的城市名称</p>';
+            }
+        });
+    </script>
+</body>
+</html>
